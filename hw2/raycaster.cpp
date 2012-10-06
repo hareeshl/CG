@@ -41,7 +41,7 @@ bool checkMap(int x,int y){
 void display(void)
 {	
 	int w=320,cnt=0;
-	double angle = 45;
+	double angle = 30;
 	double viewangle = 60.0,betaangle=0;
 	int px=115,py=191,cx,cy;
 	int initpx=115,initpy=191;
@@ -70,24 +70,18 @@ void display(void)
 				hit=1;
 				//Calculate the distance
 				xdist = abs(initpx-cx)/cos(angle * 3.14/180);								
-				//betaangle = angle - viewangle;
-				//correctdist = xdist * cos(betaangle);
-				rounddist = (64*277)/xdist;
+				betaangle = angle - viewangle;
+				correctdist = xdist * cos(betaangle * 3.14/180);
+				rounddist = (64*277)/correctdist;
 				drawStart = projMiddle - (rounddist/2);	
 				angle = angle + (double)(60.0/320.0);
+				drawVertices(cnt,drawStart,rounddist);
 			}else{
 				px = px+xa;
 				py = py+ya;
 			}
 		}
-		//**************************************************
-
-		hit=0;
-		px=115,py=191;
-		yb = 64/tan(60 * 3.14/180);
-		px = px + xb;
-		py = py + yb;
-
+		//*************************************************
 	}
 
 	glutSwapBuffers();
