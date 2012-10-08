@@ -4,109 +4,246 @@
 #include <windows.h>
 #include <GL/glut.h>
 #include "glm.h"
-#define mapWidth 4
-#define mapHeight 4
+#include "vector3d.h"
 
-int map[mapHeight][mapWidth]=
-{
-	{1,1,1,1},
-	{0,0,0,0},
-	{0,0,0,0},
-	{0,0,0,0}
-};
+#define SMALL_NUM 0.00000001
 
-void drawVertices(int x,int drawStart,int end){
-	int temp=0;
-
-	//Draw the vertices
-	glColor3f(1,1,1);
-	glBegin(GL_POINTS);
-	for(temp=0;temp<end;temp++,drawStart++){
-		glVertex2i(x,drawStart);				
-	}
-	glEnd();
-}
+GLMmodel *objmodel;
+static float ypoz = 0;
 
 void init(void) 
 {
    glClearColor (0.0, 0.0, 0.0, 0.0);   
    glDisable(GL_DEPTH_TEST);   
+   //glEnable(GL_LIGHTING);
+   //glEnable(GL_LIGHT0);
+   //GLfloat lightpos[] = {0,5,0,0};
+   //GLfloat lightColor[] = {1,1,1,0};
+   //glLightfv(GL_LIGHT0,GL_SPECULAR,lightColor);
+   //glLightfv(GL_LIGHT0,GL_POSITION,lightpos);
 }
 
-bool checkMap(int x,int y){
-	if(map[y][x] ==0) return false;
-	else return true;
+void drawmodel(){
+	int i=0,j;
+	
+	glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+	GLfloat lightpos[] = {0,5,0,1};
+    GLfloat lightColor[] = {1,1,1,0};
+	glLightfv(GL_LIGHT0,GL_SPECULAR,lightColor);
+    glLightfv(GL_LIGHT0,GL_POSITION,lightpos);
+	glShadeModel(GL_SMOOTH);
+
+	objmodel = glmReadOBJ("box.obj");
+	glmUnitize(objmodel);
+	glmFacetNormals(objmodel);
+	glmVertexNormals(objmodel,90);
+	printf("triangles %d\n",objmodel->numtriangles);
+	
+	GLMgroup *group;
+	GLMtriangle *triangle;
+
+	glBegin(GL_TRIANGLES);
+	glColor3f(1,1,1);
+	for(i=0;i<objmodel->numtriangles;i++){
+		int index = objmodel->triangles[i].vindices[0];
+		float x = objmodel->vertices[3*index];
+		float y = objmodel->vertices[3*index+1];
+		float z = objmodel->vertices[3*index+2];
+		
+		int normalIndex = objmodel->triangles[i].nindices[0];
+		float nx = objmodel->normals[3*normalIndex];
+		float ny = objmodel->normals[3*normalIndex+1];
+		float nz = objmodel->normals[3*normalIndex+2];
+
+		glNormal3f(nx,ny,nz);
+		glVertex3f(x,y,z);
+
+		index = objmodel->triangles[i].vindices[1];
+		x = objmodel->vertices[3*index];
+		y = objmodel->vertices[3*index+1];
+		z = objmodel->vertices[3*index+2];
+
+		normalIndex = objmodel->triangles[i].nindices[1];
+		nx = objmodel->normals[3*normalIndex];
+		ny = objmodel->normals[3*normalIndex+1];
+		nz = objmodel->normals[3*normalIndex+2];
+
+		glNormal3f(nx,ny,nz);
+		glVertex3f(x,y,z);
+
+		index = objmodel->triangles[i].vindices[2];
+		x = objmodel->vertices[3*index];
+		y = objmodel->vertices[3*index+1];
+		z = objmodel->vertices[3*index+2];
+		normalIndex = objmodel->triangles[i].nindices[2];
+		nx = objmodel->normals[3*normalIndex];
+		ny = objmodel->normals[3*normalIndex+1];
+		nz = objmodel->normals[3*normalIndex+2];
+
+		glNormal3f(nx,ny,nz);
+		glVertex3f(x,y,z);
+		
+	}
+	glEnd();
+	//glmDraw(objmodel,GLM_SMOOTH);
 }
 
 void display(void)
 {	
-	int w=320,cnt=0;
-	double angle = 30;
-	double viewangle = 60.0,betaangle=0;
-	int px=115,py=191,cx,cy;
-	int initpx=115,initpy=191;
-	int ya=-64,xa,xb=64,yb;
-	int hit=0;
-	double xdist=0;
-	int rounddist = 0;
-	int projMiddle = 100;
-	int drawStart = 0;
-	double correctdist=0;
-	
-	//Iterate for each vertical stripe
-	for(cnt=0;cnt<w;cnt++){		
-		hit=0;
-		px=115,py=191;
-		xa = 64/tan(60 * 3.14/180);
-		px = px + xa;
-		py = py + ya;
-		
-		//*****Find horizontal intersection*****
-		while(hit==0){
-			cx = px/64;
-			cy= py/64;
-			//If wall in map at cx,cy
-			if(checkMap(cx,cy)){ 
-				hit=1;
-				//Calculate the distance
-				xdist = abs(initpx-cx)/cos(angle * 3.14/180);								
-				betaangle = angle - viewangle;
-				correctdist = xdist * cos(betaangle * 3.14/180);
-				rounddist = (64*277)/correctdist;
-				drawStart = projMiddle - (rounddist/2);	
-				angle = angle + (double)(60.0/320.0);
-				drawVertices(cnt,drawStart,rounddist);
-			}else{
-				px = px+xa;
-				py = py+ya;
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor (0.0, 0.0, 0.0, 0.0);
+	GLMgroup *group;
+	GLMtriangle *triangle;
+
+	/*int w =250,h=250,d=1,objects,k=0;
+	int i,j;
+	int fov = 60;
+	float dx,dy;
+	float px,py;
+
+	//Eye vector
+	Vector3D eye(0,0,-2);
+	//Lookat vector
+	Vector3D lookat(0,0,1);
+	Vector3D look(lookat.x-eye.x,lookat.y-eye.y,lookat.z-eye.z);
+	look.normalize();
+
+	//Up vector
+	Vector3D up (0,1,0);
+
+	//Right 
+	Vector3D du = cross(look,up);
+	du.normalize();
+
+	Vector3D dv = cross(look,du);
+	dv.normalize();
+
+	float f1 = (float)(w/ (2 * tan((0.5 * fov)*3.14/180)));
+
+	look.normalize();
+
+	Vector3D vp;
+	vp.x = look.x;
+	vp.y = look.y;
+	vp.z = look.z;
+
+	vp.x = vp.x * f1 - 0.5 * (w * du.x + h * dv.x);
+	vp.y = vp.y * f1 - 0.5 * (w * du.y + h * dv.y);
+	vp.z = vp.z * f1 - 0.5 * (w * du.z + h * dv.z);
+
+	//Get the scene
+	drawmodel();
+	objects = objmodel->numtriangles;
+
+	glColor3f(1,1,1);
+	glBegin(GL_POINTS);
+
+	for(k=0;k<objects;k++){
+
+		for(i=0;i<w;i++){
+			for(j=0;j<h;j++){
+
+				Vector3D dir(i*du.x+j*dv.x+vp.x,
+						i*du.y+j*dv.y+vp.y,
+						i*du.z+j*dv.z+vp.z);
+				dir.normalize();
+				//printf("%Lf,%Lf,%Lf\n",dir.x,dir.y,dir.z);
+			
+				//Find intersection
+				int index = objmodel->triangles[k].vindices[0];
+				float x = objmodel->vertices[3*index];
+				float y = objmodel->vertices[3*index+1];
+				float z = objmodel->vertices[3*index+2];
+				Vector3D p0(x,y,z);
+				
+				index = objmodel->triangles[k].vindices[1];
+				x = objmodel->vertices[3*index];
+				y = objmodel->vertices[3*index+1];
+				z = objmodel->vertices[3*index+2];
+				Vector3D p1(x,y,z);
+
+				index = objmodel->triangles[k].vindices[2];
+				x = objmodel->vertices[3*index];
+				y = objmodel->vertices[3*index+1];
+				z = objmodel->vertices[3*index+2];
+				Vector3D p2(x,y,z);
+
+				Vector3D e1,e2,q,s,r;
+				float a,b,f,u,v,t;
+
+				e1 = p1 - p0;
+				e2 = p2 - p0;
+				q=cross(dir,e2);
+				a = dot(e1,q);
+				
+				if(a >-SMALL_NUM && a < SMALL_NUM){
+					//printf("Vector parallel to plane\n");
+					continue;
+				}
+
+				f = 1/a;
+				s = eye-p0;
+				u = f * dot(s,q);
+
+				if(u<0.0){
+					//printf("Intersection outside triangle\n");
+					continue;
+				}
+				
+				r = cross(s,e1);
+				v = f * dot(dir,r);
+
+				if(v <0.0 || u+v > 1.0){
+					//printf("Intersection outside the triangle\n");
+					continue;
+				}
+
+				t = f * dot(e2,r);
+				glVertex2d(i,j);
 			}
 		}
-		//*************************************************
 	}
+	glEnd();*/
+	printf("end");
+	gluLookAt(0,0,-2,0,0,1,0,1,0);
+	
+	glPushMatrix();
+	glRotatef(ypoz,0,1,0);
+	drawmodel();
+	glPopMatrix();
 
 	glutSwapBuffers();
-   
 }
 
 void reshape (int w, int h)
 {
-   glViewport (0, 0,  w,  h); 
+   glViewport (0, 0,  250,  250); 
    glMatrixMode (GL_PROJECTION);
    glLoadIdentity();
-   gluOrtho2D(0,320,200,0);
+   //glOrtho(0,250,250,0,0,1);
+   gluPerspective(60,1,1,10);
    glMatrixMode (GL_MODELVIEW);
+}
+
+void animate()
+{
+	ypoz+=0.5;
+	if (ypoz>360) ypoz=0;
+	glutPostRedisplay();
 }
 
 int main(int argc, char** argv)
 {
    glutInit(&argc, argv);
    glutInitDisplayMode (GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
-   glutInitWindowSize (320, 200); 
+   glutInitWindowSize (250, 250); 
    glutInitWindowPosition (100, 100);
    glutCreateWindow ("window");
    init ();
    glutDisplayFunc(display); 
-   glutReshapeFunc(reshape);  
+   glutReshapeFunc(reshape); 
+   //glutIdleFunc(animate);
    glutMainLoop();
    return 0;
 }
