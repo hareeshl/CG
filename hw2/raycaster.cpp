@@ -8,44 +8,43 @@
 
 #define SMALL_NUM 0.00000001
 
+float _angle = 0.0;
 GLMmodel *objmodel;
 static float ypoz = 0;
 
 void init(void) 
-{
-   glClearColor (0.0, 0.0, 0.0, 0.0);   
-   glDisable(GL_DEPTH_TEST);   
-   //glEnable(GL_LIGHTING);
-   //glEnable(GL_LIGHT0);
-   //GLfloat lightpos[] = {0,5,0,0};
-   //GLfloat lightColor[] = {1,1,1,0};
-   //glLightfv(GL_LIGHT0,GL_SPECULAR,lightColor);
-   //glLightfv(GL_LIGHT0,GL_POSITION,lightpos);
+{	
+    glEnable(GL_DEPTH_TEST);  
+	glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+	glShadeModel(GL_SMOOTH);
+	//glEnable(GL_NORMALIZE);
 }
 
 void drawmodel(){
 	int i=0,j;
-	
-	glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
 	GLfloat lightpos[] = {0,5,0,1};
-    GLfloat lightColor[] = {1,1,1,0};
-	glLightfv(GL_LIGHT0,GL_SPECULAR,lightColor);
+    GLfloat specular[] = {1,1,1,1};
+	GLfloat ambient[] = {1,1,1,1};
+	GLfloat diffuse[] = {1,1,1,1};
+
+	glLightfv(GL_LIGHT0,GL_SPECULAR,specular);
+	glLightfv(GL_LIGHT0,GL_AMBIENT,ambient);
+	glLightfv(GL_LIGHT0,GL_DIFFUSE,diffuse);
     glLightfv(GL_LIGHT0,GL_POSITION,lightpos);
-	glShadeModel(GL_SMOOTH);
 
 	objmodel = glmReadOBJ("box.obj");
 	glmUnitize(objmodel);
 	glmFacetNormals(objmodel);
-	glmVertexNormals(objmodel,90);
+	glmVertexNormals(objmodel,180);
 	printf("triangles %d\n",objmodel->numtriangles);
 	
 	GLMgroup *group;
 	GLMtriangle *triangle;
 
-	glBegin(GL_TRIANGLES);
-	glColor3f(1,1,1);
+	/*glBegin(GL_TRIANGLES);
 	for(i=0;i<objmodel->numtriangles;i++){
+		
 		int index = objmodel->triangles[i].vindices[0];
 		float x = objmodel->vertices[3*index];
 		float y = objmodel->vertices[3*index+1];
@@ -85,18 +84,18 @@ void drawmodel(){
 		glVertex3f(x,y,z);
 		
 	}
-	glEnd();
-	//glmDraw(objmodel,GLM_SMOOTH);
+	glEnd();*/
+	glmDraw(objmodel,GLM_SMOOTH);
 }
 
 void display(void)
 {	
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glClearColor (0.0, 0.0, 0.0, 0.0);
 	GLMgroup *group;
 	GLMtriangle *triangle;
 
-	/*int w =250,h=250,d=1,objects,k=0;
+	int w =250,h=250,d=1,objects,k=0;
 	int i,j;
 	int fov = 60;
 	float dx,dy;
@@ -204,25 +203,26 @@ void display(void)
 			}
 		}
 	}
-	glEnd();*/
+	glEnd();
 	printf("end");
-	gluLookAt(0,0,-2,0,0,1,0,1,0);
+	glLoadIdentity();
+	/*gluLookAt(0,0,-3,0,0,1,0,1,0);
 	
 	glPushMatrix();
-	glRotatef(ypoz,0,1,0);
+	glRotatef(_angle,1.0f,0.0f,0.0f);
 	drawmodel();
 	glPopMatrix();
-
+	*/
 	glutSwapBuffers();
 }
 
 void reshape (int w, int h)
 {
-   glViewport (0, 0,  250,  250); 
+   glViewport (0, 0,  w,  h); 
    glMatrixMode (GL_PROJECTION);
    glLoadIdentity();
-   //glOrtho(0,250,250,0,0,1);
-   gluPerspective(60,1,1,10);
+   glOrtho(0,250,250,0,0,1);
+   //gluPerspective(60,w/h,1,10);
    glMatrixMode (GL_MODELVIEW);
 }
 
@@ -233,16 +233,39 @@ void animate()
 	glutPostRedisplay();
 }
 
+void specialMap(int key,int x,int y){
+
+	switch (key){
+
+	case GLUT_KEY_LEFT:
+		_angle += 2.0f;
+		if(_angle > 360)
+			_angle -= 360;
+		glutPostRedisplay();
+	break;
+
+	case GLUT_KEY_RIGHT:
+		_angle -= 2.0f;
+		if(_angle < 0)
+			_angle = 360 - _angle;	
+		glutPostRedisplay();
+	break;
+
+	}
+}
+
+
 int main(int argc, char** argv)
 {
    glutInit(&argc, argv);
-   glutInitDisplayMode (GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
+   glutInitDisplayMode (GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
    glutInitWindowSize (250, 250); 
    glutInitWindowPosition (100, 100);
    glutCreateWindow ("window");
    init ();
    glutDisplayFunc(display); 
    glutReshapeFunc(reshape); 
+   glutSpecialFunc(specialMap);
    //glutIdleFunc(animate);
    glutMainLoop();
    return 0;
