@@ -1,0 +1,18 @@
+void fragmentLighting(float4 position : POSITION,
+                            float3 normal   : NORMAL,
+							float2 texCoord : TEXCOORD0,
+
+                        out float4 oPosition : POSITION,
+                        out float3 objectPos : TEXCOORD0,
+                        out float3 oNormal   : TEXCOORD1,
+						out float2 texCoordop : TEXCOORD2,
+						
+                    uniform float4x4 modelViewProj,
+					uniform float4x4 textureMatrix)
+{
+  oPosition = mul(modelViewProj, position);
+  objectPos = position.xyz;
+  oNormal = normal;
+  texCoordop = texCoord;
+}
+
